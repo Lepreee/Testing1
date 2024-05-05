@@ -9,6 +9,7 @@ body{
   height:10%;
   top:0%;
   background-color: black;
+  color: white;
 }
 #merk{
   display:inline-block;
@@ -25,7 +26,7 @@ body{
 #content{
   background-color: whitesmoke;
   width:90%;
-  color:white;
+  color:black;
   position:absolute;
   left:5%;
 }
