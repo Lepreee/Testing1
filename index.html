@@ -43,19 +43,18 @@
         <div id="pauseScreen"></div>
         <div id="pauseBtn"></div>
 <script>
-//alert("red for pause, continue and restart \ngreen for moving up \nthe rest for stay")
+alert("red for pause, continue and restart \ngreen for moving up \nthe rest for stay")
 let canvas = document.getElementById("canvas")
 let ctx = canvas.getContext("2d")
 let cWidth = window.innerWidth
 let cHeight = window.innerHeight
 canvas.width = cWidth 
 canvas.height = cHeight
-console.log(cWidth, cHeight)
 
 class Player{
     constructor(game){
         this.game = game
-        this.width = 20 * this.game.ratio
+        this.width = 30 * this.game.ratio
         this.height = this.width
         this.x = (this.game.width * 0.9) - this.width
         this.y = this.game.width * 0.15
@@ -84,7 +83,7 @@ class Player{
 class Obstacle{
     constructor(game){
     this.game = game
-    this.gap = 60 * this.game.ratio
+    this.gap = this.game.player.width * 2.5
     this.width = (this.game.width - this.game.ground.width - this.gap) * Math.random()
     this.height = this.game.width * 0.1
     this.x = this.game.ground.width
@@ -213,9 +212,10 @@ class Game{
 
 let game = new Game(canvas)
 
-
-
-let font = (canvas.width * 0.12).toString() + "px arial"
+let width = 0
+let once = 0
+let font = (canvas.width * 0.1).toString() + "px arial"
+let font2 = (canvas.width * 0.05).toString() + "px arial"
 let blackScreen = document.getElementById("pauseScreen")
 function animate(){
     ctx.clearRect(0,0,canvas.width,canvas.height)
@@ -227,10 +227,16 @@ function animate(){
         blackScreen.style.display = "none"
     }
     ctx.save()
-    ctx.translate(canvas.width * 0.9, canvas.width * 0.1)
+    ctx.translate(0,0)
     ctx.rotate(Math.PI / 2)
     ctx.font = font
-    ctx.fillText("SCORE = " + game.score, 0,0)
+    ctx.fillText("SCORE : " + game.score, canvas.width * 0.1, canvas.width * 0.925)
+    ctx.font = font2
+    if(once < 1){
+        width2 = ctx.measureText("@ARFARI").width
+        once++
+    }
+    ctx.fillText("@ARFARI", canvas.height - width2 - 5, canvas.width * 0.95
     ctx.restore()
     requestAnimationFrame(animate)
 }
