@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <title>Happy bird</title>
+      <style>
+      body {
+        overflow:hidden ;
+        margin:0px;
+      }
+      #pauseBtn{
+        width:10vw;
+        height:10vw;
+        background-color:red;
+        position:absolute ;
+        top:0px;
+        left:90vw;
+      }
+      #jumpBtn{
+        width:30vw;
+        height:30vw;
+        background-color:green;
+        opacity:50%;
+        border-radius:50%;
+        position:absolute ;
+        left:0px;
+        top:0px;
+      }
+      #pauseScreen{
+        width:100vw;
+        height:100vh;
+        background-color:black;
+        opacity:30%;
+        position:absolute ;
+        top:0px;
+        left:0px;
+        display:none;
+      }
+      </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+        <div id="jumpBtn"></div>
+        <div id="pauseScreen"></div>
+        <div id="pauseBtn"></div>
+<script>
+alert("red for pause, continue and restart \ngreen for moving up \nthe rest for stay")
+let canvas = document.getElementById("canvas")
+let ctx = canvas.getContext("2d")
+let cWidth = window.innerWidth
+let cHeight = window.innerHeight
+canvas.width = cWidth 
+canvas.height = cHeight
+
+class Player{
+    constructor(game){
+        this.game = game
+        this.width = 30 * this.game.ratio
+        this.height = this.width
+        this.x = (this.game.width * 0.9) - this.width
+        this.y = this.game.width * 0.15
+        this.color
+        this.vx = 0;
+        this.speed = 5 * this.game.ratio;
+        this.state = "fall"
+    }
+    draw(ctx){
+        ctx.fillStyle = this.color
+        ctx.fillRect(this.x, this.y, this.width,this.height)
+    }
+    update(){
+        this.x += this.vx
+        
+        switch(this.state){
+            case "fall":
+            this.vx=-this.speed; this.color="red"; break;
+            case "up":
+            this.vx=this.speed; this.color="green"; break;
+            case "fly":
+            this.vx=0; this.color="blue"; break;
+        }
+    }
+}
+class Obstacle{
+    constructor(game){
+    this.game = game
+    this.gap = this.game.player.width * 2.5
+    this.width = (this.game.width - this.game.ground.width - this.gap) * Math.random()
+    this.height = this.game.width * 0.1
+    this.x = this.game.ground.width
+    this.y = this.game.height
+    this.x2 = this.x + this.width + this.gap
+    this.width2 = this.game.width
+    this.spacing = this.game.width
+    this.scored = false
+    this.color = "black"
+    }
+    
+    draw(ctx){
+        ctx.fillStyle = this.color
+        ctx.fillRect(this.x, this.y, this.width , this.height)
+        ctx.fillRect(this.x2, this.y, this.width2, this.height)
+    }
+    update(){
+        this.y += this.game.speed
+    }
+    addNew(){
+        let isTrue = this.y + this.height < this.game.height - this.spacing
+        return isTrue 
+    }
+    remove(){
+        let isTrue = this.y + this.height < 0
+        return isTrue
+    }
+}
+
+class Game{
+    constructor(canvas){
+    this.width = canvas.width
+    this.height = canvas.height
+    this.ratio = this.width / 412
+    this.state = "paused"
+    this.speed = -5 * this.ratio
+    this.score = 0;
+    this.background = {
+        width: this.width,
+        height: this.height,
+        x: 0,
+        y: 0,
+        color: "skyblue"
+    }
+    this.ground = {
+        width: this.width * 0.1,
+        height: this.height,
+        x: 0,
+        y: 0,
+        color: "chocolate"
+    }
+    this.player = new Player(this)
+    this.obstacles = []
+    this.obstacles.push(new Obstacle(this))
+}
+    
+    drawGround(ctx){
+        ctx.fillStyle = this.ground.color
+        ctx.fillRect(this.ground.x, this.ground.y, this.ground.width, this.ground.height)
+    }
+    drawBackground(ctx){
+        ctx.fillStyle = this.background.color
+        ctx.fillRect(0, 0, this.background.width, this.background.height)
+    }
+    touchGround(plyr, ground){
+        let isTrue = plyr.x < ground.x + ground.width
+        return isTrue
+    }
+    detectObsColl(plyr, obs, option){
+        let pBottom = plyr.y + plyr.height
+        let oBottom = obs.y + obs.height
+        let isCollide = false
+        if(option == 1){
+            let oRight = obs.x + obs.width
+            isCollide = plyr.y < oBottom && pBottom > obs.y && plyr.x < oRight
+        }
+        if(option == 2){
+            let pRight = plyr.x + plyr.width
+            isCollide = plyr.y < oBottom && pBottom > obs.y && pRight > obs.x2
+        }
+        return isCollide
+    }
+    addScore(plyr, firstObs){
+        let isTrue = false
+        if(!firstObs.scored){
+            isTrue = plyr.y > firstObs.y + firstObs.height
+        }
+        return isTrue
+    }
+    
+    render(ctx){
+        this.drawBackground(ctx)
+        this.drawGround(ctx)
+        this.player.draw(ctx)
+        this.obstacles.forEach(obstacle => {
+            obstacle.draw(ctx)
+        })
+        if(this.state == "paused" || this.state == "gameover"){return}
+        
+        this.player.update()
+        if(this.obstacles[0].remove()){
+            this.obstacles.shift()
+        }
+        this.obstacles.forEach(obstacle => {
+            obstacle.update()
+        })
+        if(this.addScore(this.player, this.obstacles[0])){
+            this.score++
+            this.obstacles[0].scored = true
+        }
+        if(this.touchGround(this.player, this.ground) || this.detectObsColl(this.player,this.obstacles[0], 1) || this.detectObsColl(this.player,this.obstacles[0], 2)){
+            this.state = "gameover"
+        }
+        if(this.obstacles[this.obstacles.length - 1].addNew()){
+            this.obstacles.push(new Obstacle(this))
+        }
+    }
+}
+
+let game = new Game(canvas)
+
+let width2 = 0
+let once = 0
+let font = (canvas.width * 0.1).toString() + "px arial"
+let font2 = (canvas.width * 0.05).toString() + "px arial"
+let blackScreen = document.getElementById("pauseScreen")
+function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    game.render(ctx)
+    if(game.state == "paused" || game.state == "gameover"){
+        blackScreen.style.display = "block"
+    }
+    if(game.state == "playing"){
+        blackScreen.style.display = "none"
+    }
+    ctx.save()
+    ctx.translate(0,0)
+    ctx.rotate(Math.PI / 2)
+    ctx.font = font
+    ctx.fillText("SCORE : " + game.score, canvas.width * 0.1, -canvas.width * 0.925)
+    ctx.font = font2
+    if(once < 1){
+      once++
+      width2 = ctx.measureText("@ARFARI").width
+    }
+    ctx.fillText("@ARFARI", canvas.height - width2 - 5, -canvas.width * 0.95)
+    ctx.restore()
+    requestAnimationFrame(animate)
+}
+animate()
+
+let pauseBtn = document.getElementById("pauseBtn")
+pauseBtn.addEventListener("touchstart", e => {
+    if(game.state == "playing"){
+        game.state = "paused"
+        return
+    }
+    if(game.state == "paused"){
+        game.state = "playing"
+        return
+    }
+    if(game.state == "gameover"){
+        game = new Game(canvas)
+        game.state = "playing"
+    }
+    
+})
+
+let jumpBtn = document.getElementById("jumpBtn")
+jumpBtn.addEventListener("touchstart", e => {
+        game.player.state = "up"
+})
+jumpBtn.addEventListener("touchend", e => {
+    if(game.player.state == "up"){
+        game.player.state = "fall"
+    }
+})
+
+canvas.addEventListener("touchstart", e => {
+        game.player.state = "fly"
+})
+canvas.addEventListener("touchend", e => {
+    if(game.player.state == "fly"){
+        game.player.state = "fall"
+    }
+})
+</script>
+    </body>
+</html>
